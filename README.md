@@ -1,6 +1,6 @@
 # Game
 ## Knight VS Orks
-### Проект представляет собой игру на Pygame для аттестации по программированию
+### A PyGame game for a programming certification
 ## Controls:
 ### D - move right
 ### A - move left
