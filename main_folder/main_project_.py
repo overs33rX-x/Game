@@ -8,7 +8,7 @@ jump = False
 quit = False
 width = 1400
 height = 787
-fps = 30 #если поставить ниже, то плавности почти не будет
+fps = 30         #если поставить ниже, то плавности почти не будет
 p.init() 
 p.mixer.init()  
 
@@ -95,9 +95,9 @@ class User(p.sprite.Sprite):
 
     def update(self):
         global move_bg
-        # if self.power < 0:
-        #     self.fall()
-        #     return
+        if self.power < 0:
+            self.fall()
+            return
         self.time += 1
         self.speedx = 0
         self.speedy = 0
@@ -196,38 +196,110 @@ class User(p.sprite.Sprite):
             return
         self.loop += 1
 
+# class Enemy(p.sprite.Sprite):
+#     def __init__(self):
+#         p.sprite.Sprite.__init__(self) 
+#         self.image = ork_l1  # создаем квадрат 25 x 25
+#         self.rect = self.image.get_rect()
+
+#         self.rect.right = width
+#         self.rect.y = height - 205
+
+#     def update(self):
+#         # расстояние до начала атаки
+#         if abs(self.rect.x - user1.rect.x) < 100:
+#             self.atack()
+#         else:  # движение, если нет атаки
+#             self.rect.x -= 6
+
+#         # ограничения выхода спрайта за пределы области экрана
+#         if self.rect.right > width:
+#             self.rect.right = width
+#         if self.rect.left < 0:
+#             self.rect.left = 0
+
+#     def atack(self):
+#         self.speedx = -5  # числа для движения вперед-назад  !!
+#         if abs(self.rect.x - user1.rect.x) < 25:  # расстояние до отскока
+#             if self.rect.x - user1.rect.x > 0:
+#                 print('правее')
+#                 self.speedx = r.randint(50, 100)  # величина отскока
+#             else:
+#                 print('левее')
+#                 self.speedx = -r.randint(50, 100)
+#         self.rect.x += self.speedx
+
 class Enemy(p.sprite.Sprite):
     def __init__(self):
         p.sprite.Sprite.__init__(self) 
-        self.image = ork_l1  # создаем квадрат 25 x 25
+        self.image = ork_l1
         self.rect = self.image.get_rect()
-
         self.rect.right = width
         self.rect.y = height - 205
+        self.attack_cooldown = 0
+        self.health = 100
+        self.attack_range = 50  # дистанция для атаки
+        self.detection_range = 300  # дистанция обнаружения игрока
+        self.speed = 3
+        self.attack_damage = 10
+        self.attack_delay = 30  # задержка между атаками
+        self.is_attacking = False
 
     def update(self):
-        # расстояние до начала атаки
-        if abs(self.rect.x - user1.rect.x) < 100:
-            self.atack()
-        else:  # движение, если нет атаки
-            self.rect.x -= 6
-
-        # ограничения выхода спрайта за пределы области экрана
-        if self.rect.right > width:
-            self.rect.right = width
-        if self.rect.left < 0:
-            self.rect.left = 0
-
-    def atack(self):
-        self.speedx = r.randint(-6, 6)  # числа для движения вперед-назад
-        if abs(self.rect.x - user1.rect.x) < 25:  # расстояние до отскока
-            if self.rect.x - user1.rect.x > 0:
-                print('правее')
-                self.speedx = r.randint(50, 100)  # величина отскока
+        # Обновляем кулдаун атаки
+        if self.attack_cooldown > 0:
+            self.attack_cooldown -= 1
+        
+        # Рассчитываем расстояние до игрока
+        distance_to_player = abs(self.rect.x - user1.rect.x)
+        
+        # Если игрок в зоне обнаружения
+        if distance_to_player < self.detection_range:
+            # Определяем направление к игроку
+            direction = 1 if user1.rect.x > self.rect.x else -1
+            
+            # Если игрок в зоне атаки
+            if distance_to_player < self.attack_range:
+                self.attack()
             else:
-                print('левее')
-                self.speedx = -r.randint(50, 100)
-        self.rect.x += self.speedx
+                # Двигаемся к игроку
+                self.rect.x += self.speed * direction
+                # Анимация движения
+                self.image = ork_left[self.rect.x % 20 > 10]
+                
+                # Не даем выйти за границы экрана
+                if self.rect.right > width:
+                    self.rect.right = width
+                if self.rect.left < 0:
+                    self.rect.left = 0
+        else:
+            # Патрулирование или просто стоять, если игрок далеко
+            pass
+
+    def attack(self):
+        # Если атака не на кулдауне
+        if self.attack_cooldown <= 0:
+            self.is_attacking = True
+            # Анимация атаки
+            self.image = ork_l2
+            
+            # Проверяем, попали ли по игроку
+            if abs(self.rect.x - user1.rect.x) < self.attack_range + 20:  # +20 - небольшой запас
+                # Здесь можно нанести урон игроку
+                # Например: user1.take_damage(self.attack_damage)
+                pass
+                
+            # Устанавливаем кулдаун
+            self.attack_cooldown = self.attack_delay
+        else:
+            self.is_attacking = False
+            
+    def take_damage(self, damage):
+        self.health -= damage
+        if self.health <= 0:
+            self.kill()
+
+
 
 class Axe(p.sprite.Sprite):
     def __init__(self, x, y, direct):
@@ -266,8 +338,8 @@ user1 = User()
 groupUser.add(user1)  
 
 groupEnemy = p.sprite.Group() 
-#enemy1 = Enemy()
-#groupEnemy.add(enemy1)  
+enemy1 = Enemy()
+groupEnemy.add(enemy1)  
 
 groupAxe = p.sprite.Group()
 
